@@ -23,11 +23,14 @@ func main() {
 	var home = env.HomeDir()
 	var kconfig string = ""
 	var namespace string = ""
-	var image = ""
-	var podName = ""
+	var image string = ""
+	var podName string = ""
 	flag.StringVar(&kconfig, "kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	flag.StringVar(&namespace, "namespace", "testing", "kubernetes namespace to watch")
 	flag.Parse()
+
+	if namespace = os.Getenv("KUBE_NAMESPACE"); namespace == "" {
+		namespace = "default"
+	}
 
 	if podName = os.Getenv("POD_NAME"); podName == "" {
 		log.Fatal(errors.New("The terminator need the Pod name."))
