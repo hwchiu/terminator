@@ -32,7 +32,7 @@ func main() {
 	if podName = os.Getenv("POD_NAME"); podName == "" {
 		log.Fatal(errors.New("The terminator need the Pod name."))
 	}
-	if image = os.Getenv("JOB_IAMGE"); image == "" {
+	if image = os.Getenv("JOB_IMAGE"); image == "" {
 		log.Fatal(errors.New("The terminator need the target container image."))
 	}
 
@@ -64,15 +64,20 @@ func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, image s
 func watchPods(clientset *kubernetes.Clientset, namespace, image, podName string) {
 	_, controller := kubemon.WatchPods(clientset, namespace, fields.Everything(), cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			if pod, ok := newObj.(*core_v1.Pod); ok {
-				if podName == pod.ObjectMeta.Name {
-					for _, v := range pod.Status.ContainerStatuses {
-						if isTargetContainerCompleted(v, image) {
-							log.Println("Send RPC")
-						}
+			var pod *core_v1.Pod
+			var ok bool
 
-					}
+			if pod, ok = newObj.(*core_v1.Pod); !ok {
+				return
+			}
+			if podName != pod.ObjectMeta.Name {
+				return
+			}
+			for _, v := range pod.Status.ContainerStatuses {
+				if isTargetContainerCompleted(v, image) {
+					log.Println("Send RPC")
 				}
+
 			}
 		},
 	})
