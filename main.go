@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"encoding/json"
+	"errors"
 	"flag"
 	"log"
 	"os"
@@ -11,11 +11,11 @@ import (
 	"bitbucket.org/linkernetworks/cv-tracker/src/kubeconfig"
 	"bitbucket.org/linkernetworks/cv-tracker/src/kubemon"
 
+	core_v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
-	core_v1 "k8s.io/api/core/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
@@ -29,8 +29,13 @@ func main() {
 	flag.StringVar(&namespace, "namespace", "testing", "kubernetes namespace to watch")
 	flag.Parse()
 
-	podName = os.Getenv("POD_NAME")
-	image = os.Getenv("JOB_IMAGE")
+	if podName = os.Getenv("POD_NAME"); podName == "" {
+		log.Fatal(errors.New("The terminator need the Pod name."))
+	}
+	if image = os.Getenv("JOB_IAMGE"); image == "" {
+		log.Fatal(errors.New("The terminator need the target container image."))
+	}
+
 	config, err := kubeconfig.Load("", kconfig)
 	if err != nil {
 		log.Fatal(err.Error())
