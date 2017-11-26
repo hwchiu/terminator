@@ -29,14 +29,14 @@ func main() {
 	flag.StringVar(&kconfig, "kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	flag.Parse()
 
-	if namespace = os.Getenv("KUBE_NAMESPACE"); namespace == "" {
+	if namespace = os.Getenv(env.KUBE_NAMESPACE); namespace == "" {
 		namespace = "default"
 	}
 
-	if podName = os.Getenv("POD_NAME"); podName == "" {
+	if podName = os.Getenv(env.POD_NAME); podName == "" {
 		log.Fatal(errors.New("The terminator need the Pod name."))
 	}
-	if image = os.Getenv("JOB_IMAGE"); image == "" {
+	if image = os.Getenv(env.JOB_IMAGE); image == "" {
 		log.Fatal(errors.New("The terminator need the target container image."))
 	}
 
@@ -57,8 +57,8 @@ func main() {
 
 func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, image string) bool {
 	if containerStatus.Image == image {
-		terminated := containerStatus.State.Terminated
-		if terminated != nil && terminated.Reason == "Completed" {
+		terminateStatus := containerStatus.State.Terminated
+		if terminateStatus != nil && terminateStatus.Reason == "Completed" {
 			return true
 		}
 
