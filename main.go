@@ -66,7 +66,7 @@ func main() {
 
 	log.Printf("Target pod name %s, klube namespace %s, image %s", namespace, podName, image)
 
-	o, stop := trackPodContainer(clientset, namespace, image, podName)
+	o, stop := trackPodContainers(clientset, namespace, image, podName)
 Watch:
 	for {
 		statuses := <-o
@@ -99,7 +99,7 @@ func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, image s
 	return false
 }
 
-func trackPodContainer(clientset *kubernetes.Clientset, namespace, image, podName string) (chan []core_v1.ContainerStatus, chan struct{}) {
+func trackPodContainers(clientset *kubernetes.Clientset, namespace, image, podName string) (chan []core_v1.ContainerStatus, chan struct{}) {
 	o := make(chan []core_v1.ContainerStatus)
 	stop := make(chan struct{})
 	_, controller := kubemon.WatchPods(clientset, namespace, fields.Everything(), cache.ResourceEventHandlerFuncs{
