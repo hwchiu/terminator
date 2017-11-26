@@ -3,10 +3,12 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"bitbucket.org/linkernetworks/cv-tracker/src/env"
 	"bitbucket.org/linkernetworks/cv-tracker/src/kubeconfig"
@@ -66,6 +68,16 @@ func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, image s
 	return false
 }
 
+func getLogCollectionURI() string {
+	portStr := os.Getenv(env.FLUENTD_PORT)
+	pod, err := strconv.Atoi(portStr)
+	if err != nil {
+		pod = env.VAL_FLUENTD_PORT
+	}
+
+	return fmt.Sprintf("http://127.0.0.1:%d/api/processes.interruptWorkers", pod)
+}
+
 func watchPods(clientset *kubernetes.Clientset, namespace, image, podName string) {
 	stop := make(chan struct{})
 	_, controller := kubemon.WatchPods(clientset, namespace, fields.Everything(), cache.ResourceEventHandlerFuncs{
@@ -81,10 +93,12 @@ func watchPods(clientset *kubernetes.Clientset, namespace, image, podName string
 			}
 			for _, v := range pod.Status.ContainerStatuses {
 				if isTargetContainerCompleted(v, image) {
-					log.Println("Target Container is terminated, ready to send HTTP RPC to stop it")
-					_, err := http.Get("http://127.0.0.1:24444/api/processes.interruptWorkers")
+					uri := getLogCollectionURI()
+
+					log.Printf("Target Container is terminated, ready to send HTTP RPC to %s to stop it", uri)
+					_, err := http.Get(uri)
 					if err != nil {
-						log.Println("Close log-collecgtor fail", err)
+						log.Fatalf("Failed to close log-collector %v", err)
 						return
 					}
 
