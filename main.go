@@ -28,17 +28,18 @@ func main() {
 	var namespace string = ""
 	var image string = ""
 	var podName string = ""
+	var ok bool
 	flag.StringVar(&kconfig, "kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	flag.Parse()
 
-	if namespace = os.Getenv(env.KUBE_NAMESPACE); namespace == "" {
+	if namespace, ok = os.LookupEnv(env.KUBE_NAMESPACE); ok {
 		namespace = "default"
 	}
 
-	if podName = os.Getenv(env.POD_NAME); podName == "" {
+	if podName, ok = os.LookupEnv(env.POD_NAME); ok {
 		log.Fatal(errors.New("The terminator need the Pod name."))
 	}
-	if image = os.Getenv(env.JOB_IMAGE); image == "" {
+	if image, ok = os.LookupEnv(env.JOB_IMAGE); ok {
 		log.Fatal(errors.New("The terminator need the target container image."))
 	}
 
