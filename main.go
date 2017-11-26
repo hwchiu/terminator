@@ -55,7 +55,7 @@ func main() {
 	}
 
 	log.Printf("Target pod name %s, klube namespace %s, image %s", namespace, podName, image)
-	watchPods(clientset, namespace, image, podName)
+	trackPodContainer(clientset, namespace, image, podName)
 }
 
 func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, image string) bool {
@@ -79,7 +79,7 @@ func getLogCollectionURI() string {
 	return fmt.Sprintf("http://127.0.0.1:%d/api/processes.interruptWorkers", pod)
 }
 
-func watchPods(clientset *kubernetes.Clientset, namespace, image, podName string) {
+func trackPodContainer(clientset *kubernetes.Clientset, namespace, image, podName string) {
 	stop := make(chan struct{})
 	_, controller := kubemon.WatchPods(clientset, namespace, fields.Everything(), cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(oldObj, newObj interface{}) {
