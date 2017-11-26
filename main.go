@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	_ "net/http"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -66,8 +66,27 @@ func main() {
 	}
 
 	log.Printf("Target pod name %s, klube namespace %s, image %s", namespace, podName, image)
-	trackPodContainer(clientset, namespace, image, podName)
-	// TODO: use fluentdStopEndpointUrl to stop fluentd
+
+	o, stop := trackPodContainer(clientset, namespace, image, podName)
+Watch:
+	for {
+		statuses := <-o
+		for _, v := range statuses {
+			if isTargetContainerCompleted(v, image) {
+				close(o)
+				break Watch
+			}
+		}
+	}
+
+	var e struct{}
+	stop <- e
+	close(stop)
+
+	_, err = http.Get(fluentdStopEndpointUrl)
+	if err != nil {
+		log.Fatalf("Failed to close log-collector %v", err)
+	}
 }
 
 func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, image string) bool {
@@ -81,40 +100,24 @@ func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, image s
 	return false
 }
 
-func trackPodContainer(clientset *kubernetes.Clientset, namespace, image, podName string) {
+func trackPodContainer(clientset *kubernetes.Clientset, namespace, image, podName string) (chan []core_v1.ContainerStatus, chan struct{}) {
+	o := make(chan []core_v1.ContainerStatus)
 	stop := make(chan struct{})
 	_, controller := kubemon.WatchPods(clientset, namespace, fields.Everything(), cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			var pod *core_v1.Pod
 			var ok bool
-
 			if pod, ok = newObj.(*core_v1.Pod); !ok {
 				return
 			}
 			if podName != pod.ObjectMeta.Name {
 				return
 			}
-			for _, v := range pod.Status.ContainerStatuses {
-				if isTargetContainerCompleted(v, image) {
-					/*
-						uri := getLogCollectionURI()
-						log.Printf("Target Container is terminated, ready to send HTTP RPC to %s to stop it", uri)
-						_, err := http.Get(uri)
-						if err != nil {
-							log.Fatalf("Failed to close log-collector %v", err)
-							return
-						}
 
-						//Stop the Daemon here
-						close(stop)
-						return
-					*/
-				}
-
-			}
+			o <- pod.Status.ContainerStatuses
 		},
 	})
 	// _ = store
 	go controller.Run(stop)
-	<-stop
+	return o, stop
 }
