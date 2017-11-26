@@ -5,10 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
+	_ "net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"bitbucket.org/linkernetworks/cv-tracker/src/env"
 	"bitbucket.org/linkernetworks/cv-tracker/src/kubeconfig"
@@ -20,6 +19,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+)
+
+const (
+	DefaultFluentdPort = "24444"
 )
 
 func main() {
@@ -43,6 +46,14 @@ func main() {
 		log.Fatal(errors.New("The terminator need the target container image."))
 	}
 
+	var fluentdPort string = DefaultFluentdPort
+	var fluentdStopEndpointUrl string
+	if portstr, ok := os.LookupEnv(env.FLUENTD_PORT); ok {
+		fluentdPort = portstr
+	}
+	fluentdStopEndpointUrl = fmt.Sprintf("http://127.0.0.1:%s/api/processes.interruptWorkers", fluentdPort)
+	_ = fluentdStopEndpointUrl
+
 	config, err := kubeconfig.Load("", kconfig)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -56,6 +67,7 @@ func main() {
 
 	log.Printf("Target pod name %s, klube namespace %s, image %s", namespace, podName, image)
 	trackPodContainer(clientset, namespace, image, podName)
+	// TODO: use fluentdStopEndpointUrl to stop fluentd
 }
 
 func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, image string) bool {
@@ -67,16 +79,6 @@ func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, image s
 
 	}
 	return false
-}
-
-func getLogCollectionURI() string {
-	portStr := os.Getenv(env.FLUENTD_PORT)
-	pod, err := strconv.Atoi(portStr)
-	if err != nil {
-		pod = env.VAL_FLUENTD_PORT
-	}
-
-	return fmt.Sprintf("http://127.0.0.1:%d/api/processes.interruptWorkers", pod)
 }
 
 func trackPodContainer(clientset *kubernetes.Clientset, namespace, image, podName string) {
@@ -94,18 +96,19 @@ func trackPodContainer(clientset *kubernetes.Clientset, namespace, image, podNam
 			}
 			for _, v := range pod.Status.ContainerStatuses {
 				if isTargetContainerCompleted(v, image) {
-					uri := getLogCollectionURI()
+					/*
+						uri := getLogCollectionURI()
+						log.Printf("Target Container is terminated, ready to send HTTP RPC to %s to stop it", uri)
+						_, err := http.Get(uri)
+						if err != nil {
+							log.Fatalf("Failed to close log-collector %v", err)
+							return
+						}
 
-					log.Printf("Target Container is terminated, ready to send HTTP RPC to %s to stop it", uri)
-					_, err := http.Get(uri)
-					if err != nil {
-						log.Fatalf("Failed to close log-collector %v", err)
+						//Stop the Daemon here
+						close(stop)
 						return
-					}
-
-					//Stop the Daemon here
-					close(stop)
-					return
+					*/
 				}
 
 			}
