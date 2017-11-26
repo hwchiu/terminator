@@ -52,7 +52,6 @@ func main() {
 		fluentdPort = portstr
 	}
 	fluentdStopEndpointUrl = fmt.Sprintf("http://127.0.0.1:%s/api/processes.interruptWorkers", fluentdPort)
-	_ = fluentdStopEndpointUrl
 
 	config, err := kubeconfig.Load("", kconfig)
 	if err != nil {
