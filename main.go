@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"bitbucket.org/linkernetworks/cv-tracker/src/env"
+	"bitbucket.org/linkernetworks/cv-tracker/src/env/names"
 	"bitbucket.org/linkernetworks/cv-tracker/src/kubeconfig"
 	"bitbucket.org/linkernetworks/cv-tracker/src/kubemon"
 
@@ -31,20 +32,20 @@ func main() {
 	flag.StringVar(&kconfig, "kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	flag.Parse()
 
-	if val, ok := os.LookupEnv(env.KUBE_NAMESPACE); ok {
+	if val, ok := os.LookupEnv(names.KubeNamespace); ok {
 		namespace = val
 	}
 
-	if podName, ok = os.LookupEnv(env.POD_NAME); !ok {
+	if podName, ok = os.LookupEnv(names.PodName); !ok {
 		log.Fatal(errors.New("The terminator need the Pod name."))
 	}
-	if image, ok = os.LookupEnv(env.JOB_IMAGE); !ok {
+	if image, ok = os.LookupEnv(names.JobImage); !ok {
 		log.Fatal(errors.New("The terminator need the target container image."))
 	}
 
 	var fluentdPort string = env.DefaultFluentdPort
 	var fluentdStopEndpointUrl string
-	if portstr, ok := os.LookupEnv(env.FLUENTD_PORT); ok {
+	if portstr, ok := os.LookupEnv(names.FluentdPort); ok {
 		fluentdPort = portstr
 	}
 	fluentdStopEndpointUrl = fmt.Sprintf("http://127.0.0.1:%s/api/processes.interruptWorkers", fluentdPort)
