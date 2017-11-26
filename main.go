@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -79,6 +80,13 @@ func watchPods(clientset *kubernetes.Clientset, namespace, image, podName string
 			for _, v := range pod.Status.ContainerStatuses {
 				if isTargetContainerCompleted(v, image) {
 					log.Println("Send RPC")
+					resp, err := http.Get("http://127.0.0.1:24444/api/processes.interruptWorkers")
+					if err != nil {
+						log.Println("Close log-collecgtor fail", err)
+						return
+					}
+
+					//Stop the Daemon here
 				}
 
 			}
