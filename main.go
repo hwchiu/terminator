@@ -21,10 +21,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-const (
-	DefaultFluentdPort = "24444"
-)
-
 func main() {
 	var home = env.HomeDir()
 	var kconfig string = ""
@@ -46,7 +42,7 @@ func main() {
 		log.Fatal(errors.New("The terminator need the target container image."))
 	}
 
-	var fluentdPort string = DefaultFluentdPort
+	var fluentdPort string = env.DefaultFluentdPort
 	var fluentdStopEndpointUrl string
 	if portstr, ok := os.LookupEnv(env.FLUENTD_PORT); ok {
 		fluentdPort = portstr
