@@ -55,39 +55,44 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	// create the clientset
+	// Create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	log.Printf("Target pod name %s, klube namespace %s, image %s", namespace, podName, image)
-
+	log.Printf("Start tracking target namespace=%s pod=%s image=%s\n", namespace, podName, image)
 	o, stop := trackPodContainers(clientset, namespace, image, podName)
 Watch:
 	for {
 		statuses := <-o
 		for _, v := range statuses {
 			if isTargetContainerCompleted(v, image) {
+				log.Printf("found target container completed: %+v\n", v)
 				close(o)
 				break Watch
 			}
 		}
 	}
 
+	log.Println("Sending stop watch signal..")
 	var e struct{}
 	stop <- e
 	close(stop)
 
+	log.Println("Sending terminate signal to fluentd: ", fluentdStopEndpointUrl)
 	_, err = http.Get(fluentdStopEndpointUrl)
 	if err != nil {
 		log.Fatalf("Failed to close log-collector %v", err)
 	}
+
+	log.Println("Exiting...")
 }
 
 func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, image string) bool {
 	if containerStatus.Image == image {
 		terminateStatus := containerStatus.State.Terminated
+		log.Printf("Checking container status: %+v", terminateStatus)
 		if terminateStatus != nil && terminateStatus.Reason == "Completed" {
 			return true
 		}
