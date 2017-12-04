@@ -9,10 +9,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"bitbucket.org/linkernetworks/cv-tracker/src/env"
-	"bitbucket.org/linkernetworks/cv-tracker/src/env/names"
-	"bitbucket.org/linkernetworks/cv-tracker/src/kubeconfig"
-	"bitbucket.org/linkernetworks/cv-tracker/src/kubemon"
+	"bitbucket.org/linkernetworks/aurora/src/env"
+	"bitbucket.org/linkernetworks/aurora/src/env/names"
+	"bitbucket.org/linkernetworks/aurora/src/kubeconfig"
+	"bitbucket.org/linkernetworks/aurora/src/kubemon"
 
 	core_v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
