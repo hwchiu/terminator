@@ -1,9 +1,7 @@
 package main
 
 import (
-	"errors"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -26,21 +24,21 @@ func main() {
 	var home = env.HomeDir()
 	var kconfig string = ""
 	var namespace string = "default"
-	var image string = ""
 	var podName string = ""
-	var ok bool
-	flag.StringVar(&kconfig, "kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	var podImage string = ""
+
+	var defaultKubeConfigPath = filepath.Join(home, ".kube", "config")
+	flag.StringVar(&kconfig, "kubeconfig", defaultKubeConfigPath, "(optional) absolute path to the kubeconfig file")
+	flag.StringVar(&namespace, "namespace", "default", "kubernetes namespace")
+	flag.StringVar(&podName, "podName", "", "pod name for tracking container")
+	flag.StringVar(&podImage, "podImage", "", "pod image for tracking container")
 	flag.Parse()
 
-	if val, ok := os.LookupEnv(names.KubeNamespace); ok {
-		namespace = val
+	if podName == "" {
+		log.Fatal("The terminator need the Pod name.")
 	}
-
-	if podName, ok = os.LookupEnv(names.PodName); !ok {
-		log.Fatal(errors.New("The terminator need the Pod name."))
-	}
-	if image, ok = os.LookupEnv(names.JobImage); !ok {
-		log.Fatal(errors.New("The terminator need the target container image."))
+	if podImage == "" {
+		log.Fatal("The terminator need the target container image.")
 	}
 
 	var fluentdPort string = env.DefaultFluentdPort
@@ -48,7 +46,7 @@ func main() {
 	if portstr, ok := os.LookupEnv(names.FluentdPort); ok {
 		fluentdPort = portstr
 	}
-	fluentdStopEndpointUrl = fmt.Sprintf("http://127.0.0.1:%s/api/processes.interruptWorkers", fluentdPort)
+	fluentdStopEndpointUrl = "http://127.0.0.1:" + fluentdPort + "/api/processes.interruptWorkers"
 
 	config, err := kubeconfig.Load("", kconfig)
 	if err != nil {
@@ -61,13 +59,13 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	log.Printf("Start tracking target namespace=%s pod=%s image=%s\n", namespace, podName, image)
-	o, stop := trackPodContainers(clientset, namespace, image, podName)
+	log.Printf("Start tracking target namespace=%s pod=%s image=%s\n", namespace, podName, podImage)
+	o, stop := trackPodContainers(clientset, namespace, podImage, podName)
 Watch:
 	for {
 		statuses := <-o
 		for _, v := range statuses {
-			if isTargetContainerCompleted(v, image) {
+			if isTargetContainerCompleted(v, podImage) {
 				log.Printf("found target container completed: %+v\n", v)
 				close(o)
 				break Watch
@@ -89,8 +87,8 @@ Watch:
 	log.Println("Exiting...")
 }
 
-func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, image string) bool {
-	if containerStatus.Image == image {
+func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, podImage string) bool {
+	if containerStatus.Image == podImage {
 		terminateStatus := containerStatus.State.Terminated
 		log.Printf("Checking container status: %+v", terminateStatus)
 		if terminateStatus != nil && terminateStatus.Reason == "Completed" {
@@ -101,7 +99,7 @@ func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, image s
 	return false
 }
 
-func trackPodContainers(clientset *kubernetes.Clientset, namespace, image, podName string) (chan []core_v1.ContainerStatus, chan struct{}) {
+func trackPodContainers(clientset *kubernetes.Clientset, namespace, podImage, podName string) (chan []core_v1.ContainerStatus, chan struct{}) {
 	o := make(chan []core_v1.ContainerStatus)
 	stop := make(chan struct{})
 	_, controller := kubemon.WatchPods(clientset, namespace, fields.Everything(), cache.ResourceEventHandlerFuncs{
