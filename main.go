@@ -91,7 +91,8 @@ func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, podImag
 	if containerStatus.Image == podImage {
 		terminateStatus := containerStatus.State.Terminated
 		log.Printf("Checking container status: %+v", terminateStatus)
-		if terminateStatus != nil && terminateStatus.Reason == "Completed" {
+		if terminateStatus != nil {
+			// && terminateStatus.Reason == "Completed"
 			return true
 		}
 
