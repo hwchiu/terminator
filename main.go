@@ -20,6 +20,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
+var version string
+
 func main() {
 	var home = env.HomeDir()
 	var kconfig string = ""
@@ -28,6 +30,7 @@ func main() {
 	var podImage string = ""
 
 	var defaultKubeConfigPath = filepath.Join(home, ".kube", "config")
+	log.Println("Current Version: ", version)
 	flag.StringVar(&kconfig, "kubeconfig", defaultKubeConfigPath, "(optional) absolute path to the kubeconfig file")
 	flag.StringVar(&namespace, "namespace", "default", "kubernetes namespace")
 	flag.StringVar(&podName, "podName", "", "pod name for tracking container")
