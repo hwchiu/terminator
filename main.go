@@ -68,6 +68,8 @@ Watch:
 	for {
 		statuses := <-o
 		for _, v := range statuses {
+			log.Printf("Check pod status")
+			log.Printf("PodName:%s, PodImage:%s", v.Name, v.Image)
 			if isTargetContainerCompleted(v, podImage) {
 				log.Printf("found target container completed: %+v\n", v)
 				close(o)
@@ -94,6 +96,7 @@ func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, podImag
 	if containerStatus.Image == podImage {
 		terminateStatus := containerStatus.State.Terminated
 		log.Printf("Checking container status: %+v", terminateStatus)
+		log.Printf("The LastTerminationState of target container: %+v", containerStatus.LastTerminationState)
 		if terminateStatus != nil {
 			log.Printf("podImage %s termination detected.", podImage)
 			return true
@@ -108,6 +111,7 @@ func trackPodContainers(clientset *kubernetes.Clientset, namespace, podImage, po
 	stop := make(chan struct{})
 	_, controller := kubemon.WatchPods(clientset, namespace, fields.Everything(), cache.ResourceEventHandlerFuncs{
 		UpdateFunc: func(oldObj, newObj interface{}) {
+			log.Println("Received UpdateFunc Event")
 			var pod *core_v1.Pod
 			var ok bool
 			if pod, ok = newObj.(*core_v1.Pod); !ok {
@@ -116,6 +120,7 @@ func trackPodContainers(clientset *kubernetes.Clientset, namespace, podImage, po
 			if podName != pod.ObjectMeta.Name {
 				return
 			}
+			log.Println("Received Object with PodName", podName)
 
 			o <- pod.Status.ContainerStatuses
 		},
