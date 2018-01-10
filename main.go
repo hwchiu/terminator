@@ -29,7 +29,7 @@ func main() {
 	var kconfig string = ""
 	var namespace string = "default"
 	var podName string = ""
-	var targetName string = ""
+	var container string = ""
 	var interval string = ""
 
 	var defaultKubeConfigPath = filepath.Join(home, ".kube", "config")
@@ -37,14 +37,14 @@ func main() {
 	flag.StringVar(&kconfig, "kubeconfig", defaultKubeConfigPath, "(optional) absolute path to the kubeconfig file")
 	flag.StringVar(&namespace, "namespace", "default", "kubernetes namespace")
 	flag.StringVar(&podName, "podName", "", "pod name for tracking container")
-	flag.StringVar(&targetName, "targetName", "", "pod image for tracking container")
+	flag.StringVar(&container, "container", "", "contaienr name for tracking container")
 	flag.StringVar(&interval, "interval", "5", "interval between each check (seconds)")
 	flag.Parse()
 
 	if podName == "" {
 		log.Fatal("The terminator need the Pod name.")
 	}
-	if targetName == "" {
+	if container == "" {
 		log.Fatal("The terminator need the target container image.")
 	}
 
@@ -68,13 +68,13 @@ func main() {
 
 	t, _ := strconv.Atoi(interval)
 	ticker := time.NewTicker(time.Duration(t) * time.Second)
-	log.Printf("Start tracking target namespace=%s pod=%s image=%s\n", namespace, podName, targetName)
-	o, stop := trackPodContainers(clientset, namespace, targetName, podName)
+	log.Printf("Start tracking target namespace=%s pod=%s image=%s\n", namespace, podName, container)
+	o, stop := trackPodContainers(clientset, namespace, container, podName)
 Watch:
 	for {
 		select {
 		case statuses := <-o:
-			if findTargetContainer(statuses, targetName) {
+			if findTargetContainer(statuses, container) {
 				break Watch
 			}
 		case <-ticker.C:
@@ -91,7 +91,7 @@ Watch:
 				}
 
 				log.Println("Ready to check container statuses")
-				if findTargetContainer(pod.Status.ContainerStatuses, targetName) {
+				if findTargetContainer(pod.Status.ContainerStatuses, container) {
 					break Watch
 				}
 			}
@@ -114,13 +114,13 @@ Watch:
 	log.Println("Exiting...")
 }
 
-func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, targetName string) bool {
-	if containerStatus.Name == targetName {
+func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, containerName string) bool {
+	if containerStatus.Name == containerName {
 		terminateStatus := containerStatus.State.Terminated
 		log.Printf("Checking container status: %+v", terminateStatus)
 		log.Printf("The LastTerminationState of target container: %+v", containerStatus.LastTerminationState)
 		if terminateStatus != nil {
-			log.Printf("targetName %s termination detected.", targetName)
+			log.Printf("container %s termination detected.", containerName)
 			return true
 		}
 
@@ -128,7 +128,7 @@ func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, targetN
 	return false
 }
 
-func trackPodContainers(clientset *kubernetes.Clientset, namespace, targetName, podName string) (chan []core_v1.ContainerStatus, chan struct{}) {
+func trackPodContainers(clientset *kubernetes.Clientset, namespace, container, podName string) (chan []core_v1.ContainerStatus, chan struct{}) {
 	o := make(chan []core_v1.ContainerStatus)
 	stop := make(chan struct{})
 	_, controller := kubemon.WatchPods(clientset, namespace, fields.Everything(), cache.ResourceEventHandlerFuncs{
@@ -152,11 +152,11 @@ func trackPodContainers(clientset *kubernetes.Clientset, namespace, targetName, 
 	return o, stop
 }
 
-func findTargetContainer(statuses []core_v1.ContainerStatus, targetName string) bool {
+func findTargetContainer(statuses []core_v1.ContainerStatus, containerName string) bool {
 	for _, v := range statuses {
 		log.Printf("Check pod status")
 		log.Printf("PodName:%s, PodImage:%s", v.Name, v.Image)
-		if isTargetContainerCompleted(v, targetName) {
+		if isTargetContainerCompleted(v, containerName) {
 			log.Printf("found target container completed: %+v\n", v)
 			return true
 		}
