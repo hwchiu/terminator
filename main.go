@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"bitbucket.org/linkernetworks/aurora/src/env"
@@ -29,6 +30,7 @@ func main() {
 	var namespace string = "default"
 	var podName string = ""
 	var targetName string = ""
+	var interval string = ""
 
 	var defaultKubeConfigPath = filepath.Join(home, ".kube", "config")
 	log.Println("Current BuildNumber: ", buildNumber)
@@ -36,6 +38,7 @@ func main() {
 	flag.StringVar(&namespace, "namespace", "default", "kubernetes namespace")
 	flag.StringVar(&podName, "podName", "", "pod name for tracking container")
 	flag.StringVar(&targetName, "targetName", "", "pod image for tracking container")
+	flag.StringVar(&interval, "interval", "5", "interval between each check (seconds)")
 	flag.Parse()
 
 	if podName == "" {
@@ -63,7 +66,8 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	ticker := time.NewTicker(5 * time.Second)
+	t, _ := strconv.Atoi(interval)
+	ticker := time.NewTicker(time.Duration(t) * time.Second)
 	log.Printf("Start tracking target namespace=%s pod=%s image=%s\n", namespace, podName, targetName)
 	o, stop := trackPodContainers(clientset, namespace, targetName, podName)
 Watch:
