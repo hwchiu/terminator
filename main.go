@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"bitbucket.org/linkernetworks/aurora/src/env"
 	"bitbucket.org/linkernetworks/aurora/src/env/names"
@@ -62,22 +63,46 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
+	ticker := time.NewTicker(5 * time.Second)
 	log.Printf("Start tracking target namespace=%s pod=%s image=%s\n", namespace, podName, targetName)
 	o, stop := trackPodContainers(clientset, namespace, targetName, podName)
 Watch:
 	for {
-		statuses := <-o
-		for _, v := range statuses {
-			log.Printf("Check pod status")
-			log.Printf("PodName:%s, PodImage:%s", v.Name, v.Image)
-			if isTargetContainerCompleted(v, targetName) {
-				log.Printf("found target container completed: %+v\n", v)
-				close(o)
-				break Watch
+		select {
+		case statuses := <-o:
+			for _, v := range statuses {
+				log.Printf("Check pod status")
+				log.Printf("PodName:%s, PodImage:%s", v.Name, v.Image)
+				if isTargetContainerCompleted(v, targetName) {
+					log.Printf("found target container completed: %+v\n", v)
+					break Watch
+				}
+			}
+		case <-ticker.C:
+			podList, err := kubemon.GetPods(clientset, namespace)
+			if err != nil {
+				log.Println("Get Pod List fail", err)
+				continue
+			}
+
+			for _, pod := range podList.Items {
+				if podName != pod.ObjectMeta.Name {
+					continue
+				}
+
+				for _, v := range pod.Status.ContainerStatuses {
+					if isTargetContainerCompleted(v, targetName) {
+						log.Printf("found target container completed: %+v\n", v)
+						break Watch
+					}
+
+				}
 			}
 		}
 	}
 
+	close(o)
+	ticker.Stop()
 	log.Println("Sending stop watch signal..")
 	var e struct{}
 	stop <- e
