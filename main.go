@@ -70,15 +70,11 @@ Watch:
 	for {
 		select {
 		case statuses := <-o:
-			for _, v := range statuses {
-				log.Printf("Check pod status")
-				log.Printf("PodName:%s, PodImage:%s", v.Name, v.Image)
-				if isTargetContainerCompleted(v, targetName) {
-					log.Printf("found target container completed: %+v\n", v)
-					break Watch
-				}
+			if findTargetContainer(statuses, targetName) {
+				break Watch
 			}
 		case <-ticker.C:
+			log.Println("Check the pod status from ticker")
 			podList, err := kubemon.GetPods(clientset, namespace)
 			if err != nil {
 				log.Println("Get Pod List fail", err)
@@ -90,12 +86,9 @@ Watch:
 					continue
 				}
 
-				for _, v := range pod.Status.ContainerStatuses {
-					if isTargetContainerCompleted(v, targetName) {
-						log.Printf("found target container completed: %+v\n", v)
-						break Watch
-					}
-
+				log.Println("Ready to check container statuses")
+				if findTargetContainer(pod.Status.ContainerStatuses, targetName) {
+					break Watch
 				}
 			}
 		}
@@ -153,4 +146,16 @@ func trackPodContainers(clientset *kubernetes.Clientset, namespace, targetName, 
 	// _ = store
 	go controller.Run(stop)
 	return o, stop
+}
+
+func findTargetContainer(statuses []core_v1.ContainerStatus, targetName string) bool {
+	for _, v := range statuses {
+		log.Printf("Check pod status")
+		log.Printf("PodName:%s, PodImage:%s", v.Name, v.Image)
+		if isTargetContainerCompleted(v, targetName) {
+			log.Printf("found target container completed: %+v\n", v)
+			return true
+		}
+	}
+	return false
 }
