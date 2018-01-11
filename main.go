@@ -23,6 +23,7 @@ import (
 )
 
 var revision string
+var buildNumber string
 
 func main() {
 	var home = env.HomeDir()
@@ -31,9 +32,10 @@ func main() {
 	var podName string = ""
 	var container string = ""
 	var interval string = ""
-
 	var defaultKubeConfigPath = filepath.Join(home, ".kube", "config")
-	log.Println("Current Revision: ", revision)
+
+	log.Printf("Current Revision:%s , buildNumber: %s", revision, buildNumber)
+
 	flag.StringVar(&kconfig, "kubeconfig", defaultKubeConfigPath, "(optional) absolute path to the kubeconfig file")
 	flag.StringVar(&namespace, "namespace", "default", "kubernetes namespace")
 	flag.StringVar(&podName, "podName", "", "pod name for tracking container")
