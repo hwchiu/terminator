@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"bitbucket.org/linkernetworks/aurora/src/aurora"
 	"bitbucket.org/linkernetworks/aurora/src/env"
 	"bitbucket.org/linkernetworks/aurora/src/env/names"
 	"bitbucket.org/linkernetworks/aurora/src/kubeconfig"
@@ -22,9 +23,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-var revision string
-var buildNumber string
-
 func main() {
 	var home = env.HomeDir()
 	var kconfig string = ""
@@ -34,7 +32,7 @@ func main() {
 	var interval string = ""
 	var defaultKubeConfigPath = filepath.Join(home, ".kube", "config")
 
-	log.Printf("Current Revision:%s , buildNumber: %s", revision, buildNumber)
+	log.Printf("Current BuildRevision:%s , buildNumber: %s", aurora.BuildRevision, aurora.BuildNumber)
 
 	flag.StringVar(&kconfig, "kubeconfig", defaultKubeConfigPath, "(optional) absolute path to the kubeconfig file")
 	flag.StringVar(&namespace, "namespace", "default", "kubernetes namespace")
