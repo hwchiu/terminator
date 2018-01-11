@@ -32,7 +32,8 @@ func main() {
 	var interval string = ""
 	var defaultKubeConfigPath = filepath.Join(home, ".kube", "config")
 
-	log.Printf("Current BuildRevision:%s , buildNumber: %s", aurora.BuildRevision, aurora.BuildNumber)
+	log.Printf("Build Time: %s, Build Revision: %s, BuildNumber: %s", aurora.BuildDate, aurora.BuildRevision, aurora.BuildNumber)
+	log.Printf("Build Revision Describe: %s", aurora.BuildRevisionDescribe)
 
 	flag.StringVar(&kconfig, "kubeconfig", defaultKubeConfigPath, "(optional) absolute path to the kubeconfig file")
 	flag.StringVar(&namespace, "namespace", "default", "kubernetes namespace")
