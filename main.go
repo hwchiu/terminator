@@ -30,6 +30,7 @@ func main() {
 	var podName string = ""
 	var container string = ""
 	var interval string = ""
+	var retryTimes string = ""
 	var defaultKubeConfigPath = filepath.Join(home, ".kube", "config")
 
 	aurora.ShowVersion()
@@ -39,6 +40,7 @@ func main() {
 	flag.StringVar(&podName, "podName", "", "pod name for tracking container")
 	flag.StringVar(&container, "container", "", "contaienr name for tracking container")
 	flag.StringVar(&interval, "interval", "5", "interval between each check (seconds)")
+	flag.StringVar(&retryTimes, "retryTimes", "10", "the retry times for sending stop signal, 5 seconds for each retry")
 	flag.Parse()
 
 	if podName == "" {
@@ -105,10 +107,18 @@ Watch:
 	stop <- e
 	close(stop)
 
-	log.Println("Sending terminate signal to fluentd: ", fluentdStopEndpointUrl)
-	_, err = http.Get(fluentdStopEndpointUrl)
-	if err != nil {
-		log.Fatalf("Failed to close log-collector %v", err)
+	t, _ = strconv.Atoi(interval)
+	for i := 1; i <= t; i++ {
+		log.Printf("Sending terminate signal to fluentd:%s , times:%d", fluentdStopEndpointUrl, i)
+
+		_, err = http.Get(fluentdStopEndpointUrl)
+		if err == nil {
+			log.Printf("Sending terminate signal to fluentd:%s success", fluentdStopEndpointUrl)
+			break
+		}
+
+		log.Println("Sending terminate signal to fluentd fails", err)
+		time.Sleep(time.Duration(5) * time.Second)
 	}
 
 	log.Println("Exiting...")
@@ -123,7 +133,6 @@ func isTargetContainerCompleted(containerStatus core_v1.ContainerStatus, contain
 			log.Printf("container %s termination detected.", containerName)
 			return true
 		}
-
 	}
 	return false
 }
