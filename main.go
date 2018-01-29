@@ -40,7 +40,7 @@ func main() {
 	flag.StringVar(&podName, "podName", "", "pod name for tracking container")
 	flag.StringVar(&container, "container", "", "contaienr name for tracking container")
 	flag.StringVar(&interval, "interval", "5", "interval between each check (seconds)")
-	flag.StringVar(&retryTimes, "retryTimes", "10", "the retry times for sending stop signal, 5 seconds for each retry")
+	flag.StringVar(&retryTimes, "retryTimes", "10", "the retry times for sending stop signal, $interval seconds for each retry")
 	flag.Parse()
 
 	if podName == "" {
@@ -107,8 +107,9 @@ Watch:
 	stop <- e
 	close(stop)
 
+	times, _ := strconv.Atoi(retryTimes)
 	t, _ = strconv.Atoi(interval)
-	for i := 1; i <= t; i++ {
+	for i := 1; i <= times; i++ {
 		log.Printf("Sending terminate signal to fluentd:%s , times:%d", fluentdStopEndpointUrl, i)
 
 		_, err = http.Get(fluentdStopEndpointUrl)
@@ -118,7 +119,7 @@ Watch:
 		}
 
 		log.Println("Sending terminate signal to fluentd fails", err)
-		time.Sleep(time.Duration(5) * time.Second)
+		time.Sleep(time.Duration(t) * time.Second)
 	}
 
 	log.Println("Exiting...")
