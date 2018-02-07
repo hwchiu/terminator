@@ -45,7 +45,7 @@ func main() {
 	flag.Parse()
 
 	if version {
-		aurora.ShowVersion()
+		aurora.PrintVersion()
 		return
 	}
 
