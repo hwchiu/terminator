@@ -33,8 +33,9 @@ func main() {
 	var retryTimes string = ""
 	var defaultKubeConfigPath = filepath.Join(home, ".kube", "config")
 
-	aurora.ShowVersion()
+	var version bool = false
 
+	flag.BoolVar(&version, "version", false, "version")
 	flag.StringVar(&kconfig, "kubeconfig", defaultKubeConfigPath, "(optional) absolute path to the kubeconfig file")
 	flag.StringVar(&namespace, "namespace", "default", "kubernetes namespace")
 	flag.StringVar(&podName, "podName", "", "pod name for tracking container")
@@ -42,6 +43,11 @@ func main() {
 	flag.StringVar(&interval, "interval", "5", "interval between each check (seconds)")
 	flag.StringVar(&retryTimes, "retryTimes", "10", "the retry times for sending stop signal, $interval seconds for each retry")
 	flag.Parse()
+
+	if version {
+		aurora.ShowVersion()
+		return
+	}
 
 	if podName == "" {
 		log.Fatal("The terminator need the Pod name.")
