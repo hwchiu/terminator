@@ -12,7 +12,7 @@ import (
 	"bitbucket.org/linkernetworks/aurora/src/aurora"
 	"bitbucket.org/linkernetworks/aurora/src/env"
 	"bitbucket.org/linkernetworks/aurora/src/env/names"
-	"bitbucket.org/linkernetworks/aurora/src/kubeconfig"
+	"github.com/linkernetworks/kubeconfig"
 	"bitbucket.org/linkernetworks/aurora/src/kubernetes/kubemon"
 
 	core_v1 "k8s.io/api/core/v1"
