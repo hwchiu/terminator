@@ -9,11 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"bitbucket.org/linkernetworks/aurora/src/aurora"
-	"bitbucket.org/linkernetworks/aurora/src/env"
-	"bitbucket.org/linkernetworks/aurora/src/env/names"
-	"github.com/linkernetworks/kubeconfig"
 	"bitbucket.org/linkernetworks/aurora/src/kubernetes/kubemon"
+	"github.com/linkernetworks/kubeconfig"
 
 	core_v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -23,8 +20,19 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
+const (
+	DefaultFluentdPort = "24444"
+)
+
+func HomeDir() string {
+	if h := os.Getenv("HOME"); h != "" {
+		return h
+	}
+	return os.Getenv("USERPROFILE") // windows
+}
+
 func main() {
-	var home = env.HomeDir()
+	var home = HomeDir()
 	var kconfig string = ""
 	var namespace string = "default"
 	var podName string = ""
@@ -44,11 +52,6 @@ func main() {
 	flag.StringVar(&retryTimes, "retryTimes", "10", "the retry times for sending stop signal, $interval seconds for each retry")
 	flag.Parse()
 
-	if version {
-		aurora.PrintVersion()
-		return
-	}
-
 	if podName == "" {
 		log.Fatal("The terminator need the Pod name.")
 	}
@@ -56,9 +59,9 @@ func main() {
 		log.Fatal("The terminator need the target container image.")
 	}
 
-	var fluentdPort string = env.DefaultFluentdPort
+	var fluentdPort string = DefaultFluentdPort
 	var fluentdStopEndpointUrl string
-	if portstr, ok := os.LookupEnv(names.FluentdPort); ok {
+	if portstr, ok := os.LookupEnv("FLUNTED_PORT"); ok {
 		fluentdPort = portstr
 	}
 	fluentdStopEndpointUrl = "http://127.0.0.1:" + fluentdPort + "/api/processes.interruptWorkers"
