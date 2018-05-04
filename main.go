@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"bitbucket.org/linkernetworks/aurora/src/kubernetes/kubemon"
 	"github.com/linkernetworks/kubeconfig"
+	"github.com/linkernetworks/kubemon"
 
 	core_v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
