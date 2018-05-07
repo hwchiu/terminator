@@ -5,6 +5,7 @@ MAINTAINER Hung-Wei Chiu <hwchiu@linkernetworks.com>
 WORKDIR /go/src/github.com/hwchiu/terminator
 COPY main.go /go/src/github.com/hwchiu/terminator
 COPY vendor /go/src/github.com/hwchiu/terminator/vendor
+COPY utils /go/src/github.com/hwchiu/terminator/utils
 
 ENV POD_NAMESPACE default
 
