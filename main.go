@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hwchiu/terminator/utils"
 	"github.com/linkernetworks/kubeconfig"
 	"github.com/linkernetworks/kubemon"
 
@@ -24,15 +25,8 @@ const (
 	DefaultFluentdPort = "24444"
 )
 
-func HomeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
-}
-
 func main() {
-	var home = HomeDir()
+	var home = utils.HomeDir()
 	var kconfig string = ""
 	var namespace string = "default"
 	var podName string = ""
