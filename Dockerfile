@@ -8,8 +8,6 @@ COPY vendor /go/src/github.com/hwchiu/terminator/vendor
 COPY utils /go/src/github.com/hwchiu/terminator/utils
 
 ENV POD_NAMESPACE default
-ENV POD_NAME
-ENV TARGET_NAME
 
 RUN apk add --no-cache git bzr
 RUN go get github.com/kardianos/govendor
