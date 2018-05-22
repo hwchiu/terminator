@@ -1,6 +1,5 @@
 Terminator [![Build Status](https://travis-ci.org/hwchiu/terminator.svg?branch=master)](https://travis-ci.org/hwchiu/terminator) [![Docker Build Status](https://img.shields.io/docker/build/hwchiu/terminator.svg)](https://hub.docker.com/r/hwchiu/terminator/)
-
-=========
+==========
 A sidecar container for fluentd in kubernetes job.
 
 Introduction
