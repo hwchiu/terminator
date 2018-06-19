@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	DefaultFluentdPort = "24444"
+	DefaultStopURL = "http://127.0.0.1:24444/api/processes.interruptWorkers"
 )
 
 func main() {
@@ -53,12 +53,10 @@ func main() {
 		log.Fatal("The terminator need the target container image.")
 	}
 
-	var fluentdPort string = DefaultFluentdPort
-	var fluentdStopEndpointUrl string
-	if portstr, ok := os.LookupEnv("FLUNTED_PORT"); ok {
-		fluentdPort = portstr
+	var stopURL string = DefaultStopURL
+	if env, ok := os.LookupEnv("STOP_URL"); ok {
+		stopURL = env
 	}
-	fluentdStopEndpointUrl = "http://127.0.0.1:" + fluentdPort + "/api/processes.interruptWorkers"
 
 	config, err := kubeconfig.Load(kconfig)
 	if err != nil {
@@ -113,11 +111,11 @@ Watch:
 	times, _ := strconv.Atoi(retryTimes)
 	t, _ = strconv.Atoi(interval)
 	for i := 1; i <= times; i++ {
-		log.Printf("Sending terminate signal to fluentd:%s , times:%d", fluentdStopEndpointUrl, i)
+		log.Printf("Sending terminate signal to fluentd:%s , times:%d", stopURL, i)
 
-		_, err = http.Get(fluentdStopEndpointUrl)
+		_, err = http.Get(stopURL)
 		if err == nil {
-			log.Printf("Sending terminate signal to fluentd:%s success", fluentdStopEndpointUrl)
+			log.Printf("Sending terminate signal to fluentd:%s success", stopURL)
 			break
 		}
 
